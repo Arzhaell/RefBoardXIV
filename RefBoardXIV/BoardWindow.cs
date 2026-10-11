@@ -44,6 +44,7 @@ internal sealed class BoardWindow : Window
     private const string MenuPopup = "##CanvasMenu";
     private const string RenamePopup = "##RenameBoard";
     private const string DeletePopup = "##DeleteBoard";
+    private const string MorePopup = "##ToolbarMore";
 
     private enum DragMode
     {
@@ -97,6 +98,10 @@ internal sealed class BoardWindow : Window
     private int converting;
 
     private sealed record PastedImage(Board Board, byte[] Data, string Extension, Vector2 Point);
+
+    // Un bouton de la barre : son icône et son info-bulle, et son nom (avec son raccourci) quand il passe dans le menu « … ».
+    private sealed record ToolbarButton(
+        FontAwesomeIcon Icon, string Tooltip, string Label, Action Run, bool Enabled = true, bool Gap = false, string Shortcut = "");
 
     public BoardWindow(Plugin plugin)
         : base("###RefBoardXIVBoard", BaseFlags)
@@ -181,9 +186,87 @@ internal sealed class BoardWindow : Window
         FinishRemoval();
     }
 
+    // La barre tient sur une ligne quelle que soit la largeur de la fenêtre : la liste des tableaux rétrécit, puis les
+    // boutons qui ne tiennent plus passent dans le menu « … » (voir ToolbarLayout).
     private void DrawToolbar(Board board)
     {
-        ImGui.SetNextItemWidth(180 * Scale);
+        var buttons = ToolbarButtons(board);
+        var spacing = ImGui.GetStyle().ItemSpacing.X;
+        var gap = 16 * Scale;
+        var widths = buttons.Select(b => (b.Gap ? gap : spacing) + IconButtonWidth(b.Icon)).ToList();
+        var (comboWidth, shown) = ToolbarLayout.Fit(ImGui.GetContentRegionAvail().X, widths,
+            spacing + IconButtonWidth(FontAwesomeIcon.EllipsisH), 80 * Scale, 180 * Scale);
+
+        DrawBoardList(board, comboWidth);
+        foreach (var button in buttons.Take(shown))
+        {
+            ImGui.SameLine(0, button.Gap ? gap : spacing);
+            ImGui.BeginDisabled(!button.Enabled);
+            if (IconButton(button.Icon, button.Tooltip))
+                button.Run();
+            ImGui.EndDisabled();
+        }
+
+        if (shown == buttons.Count)
+            return;
+        ImGui.SameLine(0, spacing);
+        if (IconButton(FontAwesomeIcon.EllipsisH, Loc.T("More", "Plus")))
+            ImGui.OpenPopup(MorePopup);
+        if (ImGui.BeginPopup(MorePopup))
+        {
+            foreach (var button in buttons.Skip(shown))
+            {
+                if (ImGui.MenuItem(button.Label, button.Shortcut, false, button.Enabled))
+                    button.Run();
+            }
+
+            ImGui.EndPopup();
+        }
+    }
+
+    // Les boutons de la barre, dans l'ordre : ceux du tableau, puis (après un écart) ceux des images.
+    private List<ToolbarButton> ToolbarButtons(Board board)
+    {
+        var shortcuts = plugin.Shortcuts;
+        var image = Selected(board);
+        var crop = CroppingImage(board) != null
+            ? new ToolbarButton(FontAwesomeIcon.Check, Loc.T("Finish cropping (Enter)", "Valider le rognage (Entrée)"),
+                Loc.T("Finish cropping", "Valider le rognage"), () => FinishCrop(board, true), Shortcut: Loc.T("Enter", "Entrée"))
+            : new ToolbarButton(FontAwesomeIcon.Crop, Loc.T(
+                    "Crop the selected image (or right click on an image)", "Rogner l'image choisie (ou clic droit sur une image)"),
+                Loc.T("Crop the selected image", "Rogner l'image choisie"), () => StartCrop(board, image!),
+                image is { HasSize: true }, Shortcut: shortcuts.MenuLabel(ShortcutAction.Crop));
+
+        return
+        [
+            new(FontAwesomeIcon.Plus, Loc.T("New board", "Nouveau tableau"), Loc.T("New board", "Nouveau tableau"), () =>
+            {
+                plugin.SelectBoard(Store.Create(plugin.NewBoardName()));
+                StartRename();
+            }),
+            new(FontAwesomeIcon.Pen, Loc.T("Rename this board", "Renommer ce tableau"),
+                Loc.T("Rename this board", "Renommer ce tableau"), StartRename),
+            new(FontAwesomeIcon.Trash, Loc.T("Delete this board", "Supprimer ce tableau"),
+                Loc.T("Delete this board", "Supprimer ce tableau"), () => openDelete = true),
+            new(FontAwesomeIcon.ShareAlt, Loc.T(
+                    "Share this board: saves it in a single file (images included) to send. The other player imports it from the board list.",
+                    "Partager ce tableau : l'enregistre dans un seul fichier (images comprises) à envoyer. L'autre joueur l'importe depuis la liste des tableaux."),
+                Loc.T("Share this board…", "Partager ce tableau…"), () => OpenShareDialog(board)),
+            new(FontAwesomeIcon.Images, Loc.T("Add images…", "Ajouter des images…"), Loc.T("Add images…", "Ajouter des images…"),
+                () => OpenAddDialog(viewCenter), Gap: true),
+            crop,
+            new(FontAwesomeIcon.Expand, Loc.T("Show everything (or double-click the background)", "Tout voir (ou double-clic sur le fond)"),
+                Loc.T("Show everything", "Tout voir"), () => fitRequested = true, Shortcut: shortcuts.MenuLabel(ShortcutAction.Fit)),
+            new(FontAwesomeIcon.Lock, Loc.T(
+                    "Lock: only what you see in the window stays (the images, in place), and clicks go to the game. To unlock: /refboard lock.",
+                    "Verrouiller : seul ce que tu vois dans la fenêtre reste (les images, à leur place), et les clics vont au jeu. Pour déverrouiller : /refboard verrouiller."),
+                Loc.T("Lock the board", "Verrouiller le tableau"), () => plugin.SetLocked(true), Shortcut: shortcuts.MenuLabel(ShortcutAction.Lock)),
+        ];
+    }
+
+    private void DrawBoardList(Board board, float width)
+    {
+        ImGui.SetNextItemWidth(width);
         if (ImGui.BeginCombo("##Board", board.Name))
         {
             foreach (var other in Store.Boards)
@@ -199,57 +282,15 @@ internal sealed class BoardWindow : Window
                 OpenImportDialog();
             ImGui.EndCombo();
         }
+    }
 
-        ImGui.SameLine();
-        if (IconButton(FontAwesomeIcon.Plus, Loc.T("New board", "Nouveau tableau")))
-        {
-            plugin.SelectBoard(Store.Create(plugin.NewBoardName()));
-            StartRename();
-        }
-
-        ImGui.SameLine();
-        if (IconButton(FontAwesomeIcon.Pen, Loc.T("Rename this board", "Renommer ce tableau")))
-            StartRename();
-
-        ImGui.SameLine();
-        if (IconButton(FontAwesomeIcon.Trash, Loc.T("Delete this board", "Supprimer ce tableau")))
-            openDelete = true;
-
-        ImGui.SameLine();
-        if (IconButton(FontAwesomeIcon.ShareAlt, Loc.T(
-                "Share this board: saves it in a single file (images included) to send. The other player imports it from the board list.",
-                "Partager ce tableau : l'enregistre dans un seul fichier (images comprises) à envoyer. L'autre joueur l'importe depuis la liste des tableaux.")))
-            OpenShareDialog(board);
-
-        ImGui.SameLine(0, 16 * Scale);
-        if (IconButton(FontAwesomeIcon.Images, Loc.T("Add images…", "Ajouter des images…")))
-            OpenAddDialog(viewCenter);
-
-        ImGui.SameLine();
-        if (CroppingImage(board) != null)
-        {
-            if (IconButton(FontAwesomeIcon.Check, Loc.T("Finish cropping (Enter)", "Valider le rognage (Entrée)")))
-                FinishCrop(board, true);
-        }
-        else
-        {
-            var image = Selected(board);
-            ImGui.BeginDisabled(image is not { HasSize: true });
-            if (IconButton(FontAwesomeIcon.Crop, Loc.T(
-                    "Crop the selected image (or right click on an image)", "Rogner l'image choisie (ou clic droit sur une image)")) && image != null)
-                StartCrop(board, image);
-            ImGui.EndDisabled();
-        }
-
-        ImGui.SameLine();
-        if (IconButton(FontAwesomeIcon.Expand, Loc.T("Show everything (or double-click the background)", "Tout voir (ou double-clic sur le fond)")))
-            fitRequested = true;
-
-        ImGui.SameLine();
-        if (IconButton(FontAwesomeIcon.Lock, Loc.T(
-                "Lock: only what you see in the window stays (the images, in place), and clicks go to the game. To unlock: /refboard lock.",
-                "Verrouiller : seul ce que tu vois dans la fenêtre reste (les images, à leur place), et les clics vont au jeu. Pour déverrouiller : /refboard verrouiller.")))
-            plugin.SetLocked(true);
+    // Largeur d'un bouton à icône de Dalamud : un bouton ImGui dont le texte est l'icône, plus la marge du cadre.
+    private static float IconButtonWidth(FontAwesomeIcon icon)
+    {
+        ImGui.PushFont(UiBuilder.IconFont);
+        var width = ImGui.CalcTextSize(icon.ToIconString()).X;
+        ImGui.PopFont();
+        return width + (ImGui.GetStyle().FramePadding.X * 2f);
     }
 
     private static bool IconButton(FontAwesomeIcon icon, string tooltip)
