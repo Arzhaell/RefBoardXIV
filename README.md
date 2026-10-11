@@ -25,10 +25,14 @@ go to the game.
 - **Crop**: right-click an image → "Crop" (or the toolbar button, or its shortcut), then drag its edges; Enter or a
   click outside to finish, Esc to cancel, "Whole image" to undo the crop.
 - **Several boards**, each with its own name; everything is saved automatically. Pasted images are saved as PNG.
+- **Share a board**: the share button saves it in a single `.refboard` file (layout, crops and images) and shows it
+  in the explorer, ready to send (Discord…). To open a board you received: "Import a board…" at the bottom of the
+  board list, or drag the file onto your board. It arrives as a new board.
 - **Locked mode**: the window is the frame. A fixed blue frame (with its size in pixels) shows the image area: once
   locked, exactly what is inside stays, at the same place (no title bar, buttons or background), and clicks go to the
   game. The frame can stay visible when locked (setting).
-- `/refboard` shows or hides the board (works in a macro too); `/refboard lock`, `/refboard config`.
+- `/refboard` shows or hides the board (works in a macro too); `/refboard lock`, `/refboard config`. The board never
+  opens by itself: it shows when you ask for it, and only when you are logged in to a character.
 - **Keyboard shortcuts**, chosen in the "Shortcuts" tab of the settings: show / hide and lock (anywhere in the game),
   paste, undo, remove the image, crop, show everything (on the board). They do not fire while you type in the chat.
 - **Hide automatically**, as you choose: cutscenes, gpose, combat, loading screens, game UI hidden.
@@ -44,7 +48,7 @@ risk.
 
 ## Building and testing
 - `dotnet test RefBoardXIV.Tests -c Release`: tests of the logic (board saving, view, cropping, image sizes,
-  clipboard, PNG, shortcuts, commands, automatic hiding).
+  clipboard, PNG, sharing, shortcuts, commands, automatic hiding).
 - `dotnet build RefBoardXIV -c Release`: to try it, add `RefBoardXIV\bin\Release\RefBoardXIV.dll` to the dev plugin
   locations (`/xlsettings`, **Experimental** tab); Dalamud reloads it by itself, even with the game running. It does
   not load the version installed from the repository at the same time: disable that one.

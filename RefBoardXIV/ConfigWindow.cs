@@ -104,9 +104,16 @@ internal sealed class ConfigWindow : Window
             "Ton tableau de références, dans le jeu. /refboard l'affiche ou le masque (ça marche aussi dans une macro)."));
         ImGui.Spacing();
         var open = plugin.Visibility.IsOpen;
+        ImGui.BeginDisabled(!BoardVisibility.CanShow);
         if (ImGui.Button(open ? Loc.T("Hide the board", "Masquer le tableau") : Loc.T("Show the board", "Afficher le tableau")))
             plugin.Visibility.SetOpen(!open);
-        if (plugin.Visibility.IsAutoHidden)
+        ImGui.EndDisabled();
+        if (!BoardVisibility.CanShow)
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(ImGuiColors.DalamudGrey, Loc.T("(log in to a character first)", "(connecte-toi d'abord à un personnage)"));
+        }
+        else if (plugin.Visibility.IsAutoHidden)
         {
             ImGui.SameLine();
             ImGui.TextColored(ImGuiColors.DalamudOrange, Loc.T("(hidden automatically)", "(masqué automatiquement)"));

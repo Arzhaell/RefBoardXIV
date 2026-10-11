@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -193,6 +194,9 @@ internal sealed class BoardWindow : Window
                 ImGui.PopID();
             }
 
+            ImGui.Separator();
+            if (ImGui.Selectable(Loc.T("Import a board…", "Importer un tableau…")))
+                OpenImportDialog();
             ImGui.EndCombo();
         }
 
@@ -210,6 +214,12 @@ internal sealed class BoardWindow : Window
         ImGui.SameLine();
         if (IconButton(FontAwesomeIcon.Trash, Loc.T("Delete this board", "Supprimer ce tableau")))
             openDelete = true;
+
+        ImGui.SameLine();
+        if (IconButton(FontAwesomeIcon.ShareAlt, Loc.T(
+                "Share this board: saves it in a single file (images included) to send. The other player imports it from the board list.",
+                "Partager ce tableau : l'enregistre dans un seul fichier (images comprises) à envoyer. L'autre joueur l'importe depuis la liste des tableaux.")))
+            OpenShareDialog(board);
 
         ImGui.SameLine(0, 16 * Scale);
         if (IconButton(FontAwesomeIcon.Images, Loc.T("Add images…", "Ajouter des images…")))
@@ -285,7 +295,7 @@ internal sealed class BoardWindow : Window
         // Fichiers glissés depuis l'explorateur de Windows : Dalamud en fait un glisser-déposer d'ImGui (la source),
         // que la zone du tableau accepte (la cible). La source se déclare avant tout élément : son info-bulle en est un.
         if (!locked)
-            Plugin.DragDrop.CreateImGuiSource(DragDropLabel, HasImages, DragTooltip);
+            Plugin.DragDrop.CreateImGuiSource(DragDropLabel, CanDrop, DragTooltip);
 
         ImGui.InvisibleButton("##Canvas", size, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.MouseButtonMiddle);
         if (!locked)
@@ -326,12 +336,16 @@ internal sealed class BoardWindow : Window
         plugin.Configuration.Save();
     }
 
-    private static bool HasImages(IDragDropManager drag) => drag.Files.Any(BoardStore.IsImage);
+    private static bool CanDrop(IDragDropManager drag) => drag.Files.Any(f => BoardStore.IsImage(f) || BoardStore.IsSharedBoard(f));
 
     private static bool DragTooltip(IDragDropManager drag)
     {
-        var count = drag.Files.Count(BoardStore.IsImage);
-        ImGui.TextUnformatted(Loc.T($"Add {count} image(s) to the board", $"Ajouter {count} image(s) au tableau"));
+        var images = drag.Files.Count(BoardStore.IsImage);
+        var boards = drag.Files.Count(BoardStore.IsSharedBoard);
+        if (images > 0)
+            ImGui.TextUnformatted(Loc.T($"Add {images} image(s) to the board", $"Ajouter {images} image(s) au tableau"));
+        if (boards > 0)
+            ImGui.TextUnformatted(Loc.T($"Import {boards} shared board(s)", $"Importer {boards} tableau(x) partagé(s)"));
         return true;
     }
 
@@ -946,18 +960,25 @@ internal sealed class BoardWindow : Window
             selected = image.Id;
     }
 
+    // Images glissées, collées ou choisies ; un tableau partagé (.refboard) parmi elles devient un nouveau tableau.
     private void AddFiles(Board board, IReadOnlyList<string> files, Vector2 point)
     {
-        var added = Store.AddFiles(board, files, point);
-        if (added.Count > 0)
+        var shared = files.Where(BoardStore.IsSharedBoard).ToList();
+        var images = files.Where(f => !BoardStore.IsSharedBoard(f)).ToList();
+        if (shared.Count > 0 && !images.Any(BoardStore.IsImage))
         {
-            selected = added[^1].Id;
+            shared.ForEach(ImportBoard);
             return;
         }
 
-        Plugin.ChatGui.PrintError(Loc.T(
-            $"No image to add (accepted: {string.Join(", ", BoardStore.ImageExtensions)}).",
-            $"Aucune image à ajouter (formats acceptés : {string.Join(", ", BoardStore.ImageExtensions)})."));
+        var added = Store.AddFiles(board, images, point);
+        if (added.Count > 0)
+            selected = added[^1].Id;
+        else
+            Plugin.ChatGui.PrintError(Loc.T(
+                $"No image to add (accepted: {string.Join(", ", BoardStore.ImageExtensions)}).",
+                $"Aucune image à ajouter (formats acceptés : {string.Join(", ", BoardStore.ImageExtensions)})."));
+        shared.ForEach(ImportBoard);
     }
 
     private void OpenAddDialog(Vector2 point)
@@ -969,5 +990,65 @@ internal sealed class BoardWindow : Window
             if (ok && paths.Count > 0 && Store.Boards.Contains(board))
                 AddFiles(board, paths, point);
         }, 50, Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+    }
+
+    private void OpenShareDialog(Board board)
+    {
+        FinishCrop(board, true);
+        var invalid = Path.GetInvalidFileNameChars();
+        var fileName = new string(board.Name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        plugin.FileDialog.SaveFileDialog(Loc.T("Share this board", "Partager ce tableau"), SharedFilter, fileName,
+            BoardStore.ShareExtension, (ok, path) =>
+            {
+                if (!ok || !Store.Boards.Contains(board) || !Store.Export(board, path))
+                    return;
+                var megabytes = new FileInfo(path).Length / (1024d * 1024d);
+                Plugin.ChatGui.Print(Loc.T(
+                    $"Board \"{board.Name}\" saved to share ({megabytes:0.0} MB): {path}",
+                    $"Tableau « {board.Name} » enregistré pour le partage ({megabytes:0.0} Mo) : {path}"));
+                ShowInExplorer(path);
+            }, DownloadsFolder());
+    }
+
+    private void OpenImportDialog()
+    {
+        plugin.FileDialog.OpenFileDialog(Loc.T("Import a board", "Importer un tableau"), SharedFilter, (ok, paths) =>
+        {
+            if (ok)
+                paths.ForEach(ImportBoard);
+        }, 10, DownloadsFolder());
+    }
+
+    private static string SharedFilter => $"RefBoardXIV{{{BoardStore.ShareExtension}}}";
+
+    private void ImportBoard(string path)
+    {
+        if (Store.Import(path) is not { } imported)
+            return;
+        plugin.SelectBoard(imported);
+        fitRequested = true;
+        Plugin.ChatGui.Print(Loc.T(
+            $"Board \"{imported.Name}\" imported ({imported.Images.Count} image(s)).",
+            $"Tableau « {imported.Name} » importé ({imported.Images.Count} image(s))."));
+    }
+
+    // Ouvre l'explorateur sur le fichier partagé, prêt à être glissé dans une discussion (Discord…).
+    private static void ShowInExplorer(string path)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+        }
+        catch (Exception e)
+        {
+            Plugin.Log.Warning(e, "Could not open the explorer.");
+        }
+    }
+
+    // Les fichiers reçus (Discord, navigateur) arrivent en général dans Téléchargements.
+    private static string DownloadsFolder()
+    {
+        var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        return Directory.Exists(downloads) ? downloads : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
     }
 }

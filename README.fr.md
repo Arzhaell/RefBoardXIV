@@ -26,11 +26,15 @@ l'écran et tes clics passent au jeu.
   bords ; Entrée ou un clic à côté pour valider, Échap pour annuler, « Image entière » pour défaire le rognage.
 - **Plusieurs tableaux**, chacun avec son nom ; tout est enregistré automatiquement. Les images collées sont
   enregistrées en PNG.
+- **Partager un tableau** : le bouton de partage l'enregistre dans un seul fichier `.refboard` (disposition, rognages
+  et images) et le montre dans l'explorateur, prêt à envoyer (Discord…). Pour ouvrir un tableau reçu : « Importer un
+  tableau… » en bas de la liste des tableaux, ou glisser le fichier sur ton tableau. Il arrive en nouveau tableau.
 - **Mode verrouillé** : la fenêtre sert de cadre. Un cadre bleu fixe (avec sa taille en pixels) montre la zone des
   images : verrouillé, il reste exactement ce qui est dedans, à la même place (sans barre de titre, boutons ni fond),
   et les clics passent au jeu. Le cadre peut rester visible une fois verrouillé (réglage).
 - `/refboard` affiche ou masque le tableau (marche aussi dans une macro) ; `/refboard verrouiller`,
-  `/refboard réglages` (ou `lock`, `config`).
+  `/refboard réglages` (ou `lock`, `config`). Le tableau ne s'ouvre jamais tout seul : il s'affiche quand tu le
+  demandes, et seulement connecté à un personnage.
 - **Raccourcis clavier** à choisir dans l'onglet « Raccourcis » des réglages : afficher / masquer et verrouiller
   (partout dans le jeu), coller, annuler, retirer l'image, rogner, tout voir (sur le tableau). Ils ne se déclenchent
   pas pendant qu'on écrit dans la discussion.
@@ -47,7 +51,7 @@ FFXIV. Tu l'utilises à tes risques.
 
 ## Compiler et tester
 - `dotnet test RefBoardXIV.Tests -c Release` : tests de la logique (enregistrement des tableaux, vue, rognage,
-  tailles d'image, presse-papiers, PNG, raccourcis, commandes, masquage automatique).
+  tailles d'image, presse-papiers, PNG, partage, raccourcis, commandes, masquage automatique).
 - `dotnet build RefBoardXIV -c Release` : pour l'essayer, ajoute `RefBoardXIV\bin\Release\RefBoardXIV.dll` aux
   emplacements des plugins de développement (`/xlsettings`, onglet **Expérimental**) ; Dalamud la recharge toute
   seule, même jeu ouvert. Il ne charge pas en même temps la version installée depuis le dépôt : désactive-la.

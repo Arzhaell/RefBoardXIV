@@ -1,11 +1,15 @@
 using System;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 
 namespace RefBoardXIV;
 
-/// <summary>Affiche et masque la fenêtre du tableau : à ta demande, et automatiquement selon ce qui se passe en jeu.</summary>
+/// <summary>
+/// Affiche et masque la fenêtre du tableau : à ta demande, et automatiquement selon ce qui se passe en jeu. Il ne
+/// s'ouvre jamais tout seul (fermé au lancement du jeu) et ne s'affiche que connecté à un personnage.
+/// </summary>
 internal sealed class BoardVisibility : IDisposable
 {
     private readonly Configuration config;
@@ -16,7 +20,7 @@ internal sealed class BoardVisibility : IDisposable
     {
         this.config = config;
         this.window = window;
-        window.IsOpen = config.BoardOpen;
+        window.IsOpen = false;
         Plugin.Framework.Update += OnUpdate;
     }
 
@@ -25,17 +29,27 @@ internal sealed class BoardVisibility : IDisposable
     /// <summary>Le tableau est masqué à cause d'une situation du jeu (cinématique…).</summary>
     public bool IsAutoHidden => autoHide.HidByPlugin;
 
+    /// <summary>Connecté à un personnage : le tableau peut s'afficher.</summary>
+    public static bool CanShow => Plugin.ClientState.IsLoggedIn;
+
     public void Toggle() => SetOpen(!window.IsOpen);
 
-    /// <summary>Affiche ou masque le tableau à ta demande (le choix est retenu d'une session à l'autre).</summary>
+    /// <summary>Affiche ou masque le tableau à ta demande.</summary>
     public void SetOpen(bool open)
     {
-        window.IsOpen = open;
         autoHide.Forget();
-        if (config.BoardOpen == open)
+        if (open && !CanShow)
+        {
+            Plugin.Notifications.AddNotification(new Notification
+            {
+                Title = "RefBoardXIV",
+                Content = Loc.T("Log in to a character to show the board.", "Connecte-toi à un personnage pour afficher le tableau."),
+                Type = NotificationType.Info,
+            });
             return;
-        config.BoardOpen = open;
-        config.Save();
+        }
+
+        window.IsOpen = open;
     }
 
     public void Dispose()
@@ -45,6 +59,18 @@ internal sealed class BoardVisibility : IDisposable
 
     private void OnUpdate(IFramework framework)
     {
+        // Écran titre, choix du personnage, déconnexion : le tableau se ferme, et attend que tu le rouvres.
+        if (!CanShow)
+        {
+            if (window.IsOpen || autoHide.HidByPlugin)
+            {
+                autoHide.Forget();
+                window.IsOpen = false;
+            }
+
+            return;
+        }
+
         switch (autoHide.Update(AutoHideState.ShouldHide(config.AutoHide, CurrentSituations()), window.IsOpen))
         {
             case AutoHideAction.Hide:

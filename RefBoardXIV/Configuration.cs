@@ -12,9 +12,6 @@ public class Configuration : IPluginConfiguration
 
     public PluginLanguage Language { get; set; } = PluginLanguage.Auto;
 
-    /// <summary>Le tableau est affiché (ce que tu as choisi ; le masquage automatique n'y touche pas).</summary>
-    public bool BoardOpen { get; set; } = true;
-
     /// <summary>Tableau affiché dans la fenêtre.</summary>
     public Guid CurrentBoard { get; set; }
 
