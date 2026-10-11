@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RefBoardXIV/RefBoardXIV.csproj" />
+  <Project Path="RefBoardXIV.Tests/RefBoardXIV.Tests.csproj" />
+</Solution>

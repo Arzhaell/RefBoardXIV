@@ -1,0 +1,10 @@
+{
+  "Author": "Arzhael",
+  "Name": "RefBoardXIV",
+  "Punchline": "A reference board inside the game: drop images, zoom, move them around.",
+  "Description": "A reference board in a game window: drag images from the Windows explorer or paste them, zoom with the mouse wheel, move, resize and crop them. Several boards, a locked mode where only the images stay and clicks go to the game, customizable keyboard shortcuts, and automatic hiding in cutscenes, gpose, combat or loading screens.\nAvailable in English and French. Command: /refboard",
+  "ApplicableVersion": "any",
+  "Tags": [ "reference", "images", "board", "art", "overlay" ],
+  "RepoUrl": "https://github.com/Arzhaell/RefBoardXIV",
+  "IconUrl": "https://raw.githubusercontent.com/Arzhaell/RefBoardXIV/main/images/icon.png"
+}

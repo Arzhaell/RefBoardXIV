@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Icône du plugin : un tableau de références (images punaisées), son cadre bleu et un repère de rognage jaune. -->
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22324f"/>
+      <stop offset="1" stop-color="#101827"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fd8ff"/>
+      <stop offset="1" stop-color="#3d7fd1"/>
+    </linearGradient>
+    <linearGradient id="sunset" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd15a"/>
+      <stop offset="1" stop-color="#f0794b"/>
+    </linearGradient>
+    <linearGradient id="dusk" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9d7bf0"/>
+      <stop offset="1" stop-color="#4a3a9c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Fond -->
+  <rect x="8" y="8" width="496" height="496" rx="104" fill="url(#background)"/>
+
+  <!-- Cadre bleu fixe (coins) -->
+  <g fill="none" stroke="#73ccff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 72 136 V 72 H 136"/>
+    <path d="M 376 72 H 440 V 136"/>
+    <path d="M 440 376 V 440 H 376"/>
+    <path d="M 136 440 H 72 V 376"/>
+  </g>
+
+  <!-- Image du fond, à gauche : paysage -->
+  <g transform="rotate(-11 190 230)" filter="url(#shadow)">
+    <rect x="98" y="140" width="184" height="168" rx="10" fill="#f4f1ea"/>
+    <rect x="112" y="154" width="156" height="118" rx="4" fill="url(#sky)"/>
+    <path d="M 112 272 L 162 208 L 196 244 L 226 214 L 268 272 Z" fill="#2b4a7a"/>
+    <circle cx="232" cy="186" r="14" fill="#fff6d6"/>
+  </g>
+
+  <!-- Image du fond, à droite : coucher de soleil -->
+  <g transform="rotate(9 330 220)" filter="url(#shadow)">
+    <rect x="240" y="128" width="182" height="172" rx="10" fill="#f4f1ea"/>
+    <rect x="254" y="142" width="154" height="122" rx="4" fill="url(#sunset)"/>
+    <circle cx="331" cy="238" r="32" fill="#fff1c2"/>
+    <rect x="254" y="238" width="154" height="26" fill="#c9553a"/>
+  </g>
+
+  <!-- Image de devant, rognée (repère jaune) -->
+  <g transform="rotate(-3 256 330)" filter="url(#shadow)">
+    <rect x="160" y="250" width="192" height="168" rx="10" fill="#f4f1ea"/>
+    <rect x="174" y="264" width="164" height="118" rx="4" fill="url(#dusk)"/>
+    <circle cx="256" cy="304" r="20" fill="#e8dcff"/>
+    <path d="M 214 382 Q 256 316 298 382 Z" fill="#e8dcff"/>
+  </g>
+  <g fill="none" stroke="#ffd15a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 150 290 V 240 H 200"/>
+    <path d="M 362 380 V 430 H 312"/>
+  </g>
+
+  <!-- Punaises -->
+  <g>
+    <circle cx="186" cy="146" r="13" fill="#e5534b"/>
+    <circle cx="182" cy="142" r="4" fill="#ffb3ad"/>
+    <circle cx="340" cy="132" r="13" fill="#e5534b"/>
+    <circle cx="336" cy="128" r="4" fill="#ffb3ad"/>
+    <circle cx="256" cy="252" r="13" fill="#e5534b"/>
+    <circle cx="252" cy="248" r="4" fill="#ffb3ad"/>
+  </g>
+</svg>
