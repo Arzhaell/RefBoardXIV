@@ -3,8 +3,8 @@
     "Author": "Arzhael",
     "Name": "RefBoardXIV",
     "InternalName": "RefBoardXIV",
-    "AssemblyVersion": "1.1.0.0",
-    "Description": "A reference board in a game window: drag images from the Windows explorer or paste them, zoom with the mouse wheel, move, resize and crop them. Several boards, a locked mode where only the images stay and clicks go to the game, customizable keyboard shortcuts, and automatic hiding in cutscenes, gpose, combat or loading screens.\nAvailable in English and French. Command: /refboard",
+    "AssemblyVersion": "1.2.0.0",
+    "Description": "A reference board in a game window: drag images from the Windows explorer or paste them, zoom with the mouse wheel, move, resize and crop them. Several boards, which you can share with other players as a single file, a locked mode where only the images stay and clicks go to the game, customizable keyboard shortcuts, and automatic hiding in cutscenes, gpose, combat or loading screens.\nAvailable in English and French. Command: /refboard",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/Arzhaell/RefBoardXIV",
     "Tags": [
@@ -22,9 +22,9 @@
     "IconUrl": "https://raw.githubusercontent.com/Arzhaell/RefBoardXIV/main/images/icon.png",
     "Punchline": "A reference board inside the game: drop images, zoom, move them around.",
     "AcceptsFeedback": true,
-    "DownloadLinkInstall": "https://github.com/Arzhaell/RefBoardXIV/releases/download/v1.1.0/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/Arzhaell/RefBoardXIV/releases/download/v1.1.0/latest.zip",
-    "DownloadLinkTesting": "https://github.com/Arzhaell/RefBoardXIV/releases/download/v1.1.0/latest.zip",
-    "LastUpdate": 1791739958
+    "DownloadLinkInstall": "https://github.com/Arzhaell/RefBoardXIV/releases/download/v1.2.0/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/Arzhaell/RefBoardXIV/releases/download/v1.2.0/latest.zip",
+    "DownloadLinkTesting": "https://github.com/Arzhaell/RefBoardXIV/releases/download/v1.2.0/latest.zip",
+    "LastUpdate": 1791743657
   }
 ]
