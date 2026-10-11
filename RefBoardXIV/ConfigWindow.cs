@@ -204,13 +204,17 @@ internal sealed class ConfigWindow : Window
         ImGui.TextUnformatted(ActionName(action));
 
         ImGui.SameLine(200 * scale);
-        var label = capturing == action ? Loc.T("Press a key… (Esc: cancel)", "Appuie sur une touche… (Échap : annuler)") : ComboName(Config.Shortcut(action));
-        if (capturing == action)
+        // Le clic change « capturing » : la couleur est retirée selon l'état d'avant le clic, sinon on retirerait une
+        // couleur jamais mise (celle de Dalamud), ce qui efface le texte de toutes les fenêtres.
+        var isCapturing = capturing == action;
+        var label = isCapturing ? Loc.T("Press a key… (Esc: cancel)", "Appuie sur une touche… (Échap : annuler)") : ComboName(Config.Shortcut(action));
+        if (isCapturing)
             ImGui.PushStyleColor(ImGuiCol.Text, Accent);
-        if (ImGui.Button(label + "##Set", new Vector2(230 * scale, 0)))
-            StartCapture(action);
-        if (capturing == action)
+        var clicked = ImGui.Button(label + "##Set", new Vector2(230 * scale, 0));
+        if (isCapturing)
             ImGui.PopStyleColor();
+        if (clicked)
+            StartCapture(action);
 
         ImGui.SameLine();
         if (ImGuiComponents.IconButton(FontAwesomeIcon.Times))
